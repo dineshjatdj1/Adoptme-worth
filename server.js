@@ -1,11 +1,20 @@
+const express = require("express");
 const { google } = require("googleapis");
-const fs = require("fs");
 
-// Load service account JSON directly
-const credentials = JSON.parse(fs.readFileSync("service-account.json"));
-const clientEmail = credentials.client_email;
-console.log("Service Account:", clientEmail);
+const app = express();
+const PORT = process.env.PORT || 10000;
 
+// Decode Base64 service account JSON
+let credentials;
+try {
+  credentials = JSON.parse(
+    Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64, "base64").toString()
+  );
+} catch (err) {
+  console.error("❌ Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON_B64:", err.message);
+}
+
+// Auth setup
 const auth = new google.auth.GoogleAuth({
   credentials,
   scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
@@ -13,22 +22,51 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// Replace with your spreadsheet ID
-const SPREADSHEET_ID = "1rmREyYRz2mAL5-v51TV8xhOBOaLLMd3ip-ccIoTz9jw";
+// Spreadsheet ID
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+if (!SPREADSHEET_ID) console.error("❌ SPREADSHEET_ID is not set");
 
-async function test() {
+// Root route
+app.get("/", (req, res) => {
+  res.send("<h1>Adopt Me Pet Value API 🚀</h1><p>Try /api/pets</p>");
+});
+
+// Helper function to fetch tab
+async function fetchTab(tabName) {
   try {
-    const tabs = ["Pets", "TradeExample", "Variants", "MarketReport"];
-    for (const tab of tabs) {
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${tab}!A2:Z`,
-      });
-      console.log(`✅ ${tab}:`, res.data.values ? res.data.values.slice(0, 5) : "No data");
-    }
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${tabName}!A2:Z`,
+    });
+    return response.data.values || [];
   } catch (err) {
-    console.error("❌ Error:", err.message);
+    console.error(`❌ Error fetching ${tabName}:`, err.message);
+    return { error: err.message };
   }
 }
 
-test();
+// API endpoints
+app.get("/api/pets", async (req, res) => {
+  const data = await fetchTab("Pets");
+  res.json(data);
+});
+
+app.get("/api/trades", async (req, res) => {
+  const data = await fetchTab("TradeExample");
+  res.json(data);
+});
+
+app.get("/api/variants", async (req, res) => {
+  const data = await fetchTab("Variants");
+  res.json(data);
+});
+
+app.get("/api/market", async (req, res) => {
+  const data = await fetchTab("MarketReport");
+  res.json(data);
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
