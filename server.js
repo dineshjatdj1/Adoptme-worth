@@ -1,13 +1,11 @@
 const { google } = require("googleapis");
 const fs = require("fs");
-require("dotenv").config();
 
-// Load service account JSON
+// Load service account JSON directly
 const credentials = JSON.parse(fs.readFileSync("service-account.json"));
 const clientEmail = credentials.client_email;
 console.log("Service Account:", clientEmail);
 
-// Auth
 const auth = new google.auth.GoogleAuth({
   credentials,
   scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
@@ -15,30 +13,22 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// Spreadsheet ID
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-console.log("Spreadsheet ID:", SPREADSHEET_ID);
+// Replace with your spreadsheet ID
+const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID";
 
-// Helper function to fetch tab data
-async function fetchTab(tabName) {
+async function test() {
   try {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${tabName}!A2:Z`,
-    });
-    console.log(`✅ First rows from ${tabName} tab:`);
-    console.log(res.data.values ? res.data.values.slice(0, 5) : "No data");
+    const tabs = ["Pets", "TradeExample", "Variants", "MarketReport"];
+    for (const tab of tabs) {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${tab}!A2:Z`,
+      });
+      console.log(`✅ ${tab}:`, res.data.values ? res.data.values.slice(0, 5) : "No data");
+    }
   } catch (err) {
-    console.error(`❌ Error fetching ${tabName}:`, err.message);
+    console.error("❌ Error:", err.message);
   }
 }
 
-// Fetch all 4 tabs
-async function testAll() {
-  await fetchTab("Pets");
-  await fetchTab("TradeExample");
-  await fetchTab("Variants");
-  await fetchTab("MarketReport");
-}
-
-testAll();
+test();
