@@ -63,6 +63,10 @@ app.get("/api/market", async (req, res) => {
 });
 
 // Start server
+app.get("/", (req, res) => {
+  res.send("<h1>Adopt Me Pet Value API is running 🚀</h1><p>Try <a href='/api/pets'>/api/pets</a></p>");
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
