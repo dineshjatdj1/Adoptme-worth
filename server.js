@@ -19,9 +19,9 @@ if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64) {
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://your-cloudways-domain.com'
+  'https://phpstack-1507935-5860673.cloudwaysapps.com/'
 ];
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors()));
 
 
 app.get('/api/pets', async (req, res) => {
