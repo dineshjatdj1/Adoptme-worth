@@ -1,38 +1,65 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-require('dotenv').config();
+const express = require("express");
+const { google } = require("googleapis");
+require("dotenv").config();
 
-const { getPets } = require('./sheets');
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64) {
-  const path = './service-account.json';
-  if (!fs.existsSync(path)) {
-    fs.writeFileSync(
-      path,
-      Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64, 'base64').toString('utf8')
-    );
-    console.log('✅ service-account.json written from env');
-  }
+// Auth
+const auth = new google.auth.GoogleAuth({
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
+  scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+});
+
+const sheets = google.sheets({ version: "v4", auth });
+
+// Helper function to fetch tab data
+async function getSheetData(tabName, range = "A2:Z") {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.SPREADSHEET_ID,
+    range: `${tabName}!${range}`,
+  });
+  return res.data.values || [];
 }
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://phpstack-1507935-5860673.cloudwaysapps.com/'
-];
-app.use(cors()));
-
-
-app.get('/api/pets', async (req, res) => {
+// Routes
+app.get("/api/pets", async (req, res) => {
   try {
-    const pets = await getPets();
-    res.json(pets);
+    const pets = await getSheetData("Pets");
+    res.json({ pets });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch pets' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Backend running on ${PORT}`));
+app.get("/api/trades", async (req, res) => {
+  try {
+    const trades = await getSheetData("TradeExample");
+    res.json({ trades });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/variants", async (req, res) => {
+  try {
+    const variants = await getSheetData("Variants");
+    res.json({ variants });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/market", async (req, res) => {
+  try {
+    const market = await getSheetData("MarketReport");
+    res.json({ market });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
