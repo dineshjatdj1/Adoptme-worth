@@ -21,7 +21,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://phpstack-1507935-5860673.cloudwaysapps.com/'
 ];
-app.use(cors()));
+app.use(cors({ origin: allowedOrigins }));
 
 
 app.get('/api/pets', async (req, res) => {
