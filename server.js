@@ -1,19 +1,13 @@
-const express = require("express");
 const { google } = require("googleapis");
+const fs = require("fs");
+require("dotenv").config();
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Load service account JSON
+const credentials = JSON.parse(fs.readFileSync("service-account.json"));
+const clientEmail = credentials.client_email;
+console.log("Service Account:", clientEmail);
 
-// Auth setup
-let credentials;
-try {
-  credentials = JSON.parse(
-    Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64, "base64").toString()
-  );
-} catch (err) {
-  console.error("Failed to parse service account:", err.message);
-}
-
+// Auth
 const auth = new google.auth.GoogleAuth({
   credentials,
   scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
@@ -21,26 +15,30 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// Root test route
-app.get("/", (req, res) => {
-  res.send("Adopt Me API is running 🚀");
-});
+// Spreadsheet ID
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+console.log("Spreadsheet ID:", SPREADSHEET_ID);
 
-// Test Sheets route
-app.get("/api/pets", async (req, res) => {
+// Helper function to fetch tab data
+async function fetchTab(tabName) {
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "Pets!A2:Z", // just the Pets tab
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${tabName}!A2:Z`,
     });
-
-    res.json({ pets: response.data.values });
-  } catch (error) {
-    console.error("Error fetching sheet:", error.message);
-    res.status(500).json({ error: error.message });
+    console.log(`✅ First rows from ${tabName} tab:`);
+    console.log(res.data.values ? res.data.values.slice(0, 5) : "No data");
+  } catch (err) {
+    console.error(`❌ Error fetching ${tabName}:`, err.message);
   }
-});
+}
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Fetch all 4 tabs
+async function testAll() {
+  await fetchTab("Pets");
+  await fetchTab("TradeExample");
+  await fetchTab("Variants");
+  await fetchTab("MarketReport");
+}
+
+testAll();
