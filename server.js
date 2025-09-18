@@ -11,7 +11,7 @@ try {
     Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64, "base64").toString()
   );
 } catch (err) {
-  console.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON_B64:", err.message);
+  console.error("Failed to parse service account:", err.message);
 }
 
 const auth = new google.auth.GoogleAuth({
