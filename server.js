@@ -7,9 +7,12 @@ const PORT = process.env.PORT || 3000;
 
 // Auth
 const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
+  credentials: JSON.parse(
+    Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64, "base64").toString()
+  ),
   scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
 });
+
 
 const sheets = google.sheets({ version: "v4", auth });
 
